@@ -1,4 +1,10 @@
 import sys
-print(sys.version)
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point
 
-print("Hello World!")
+df = pd.read_csv('DataFiles/PlanningEnforcement_AppealDecisions.csv')
+df['Geometry'] = list(zip(df['Y'], df['X']))
+df['Geometry'] = df['Geometry'].apply(Point)
+df.head()
+
