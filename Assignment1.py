@@ -10,9 +10,11 @@ print(df.head())
 print(df.columns)
 
 gdf = gpd.GeoDataFrame(df)
-print(gdf.columns)
-gdf.set_crs("EPSG:29902", inplace=True)
+# data is in Irish Grid, needs to be converted to unprojected lat/lon coordinates, use global standard WGS84 datum.
+gdf.set_crs("EPSG:4326", inplace=True)
+print(gdf.head)
 
+gdf.to_file('DataFiles/appeal_points.shp')
 
 
 
