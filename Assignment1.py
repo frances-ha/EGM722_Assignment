@@ -68,7 +68,14 @@ appeals.to_file('DataFiles/appeal_points.shp')
 # Load open source Northern Ireland (NI) shapefile data
 
 outline = gpd.read_file('DataFiles/NI_outline.shp')
-lgds = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
+lgd = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
+water = gpd.read_file('DataFiles/NI_Water_Bodies.shp')
+
+# Export Lough Neagh polygon from NI_Water_Bodies.shp to new shapefile to display in simplified map display
+
+neagh = water.head(1)
+neagh.to_file('DataFiles/lough_neagh.shp')
+neagh = gpd.read_file('DataFiles/lough_neagh.shp')
 
 # transform all shapefile geometries to appropriate projected crs for display in mapping output plot.
 # WGS84 UTM (Zone 29) is good for large-scale mapping especially when a small region such as NI fits within one
@@ -76,7 +83,8 @@ lgds = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
 
 appeals = appeals.to_crs(epsg=32629)
 outline = outline.to_crs(epsg=32629)
-lgds = lgds.to_crs(epsg=32629)
+lgd = lgd.to_crs(epsg=32629)
+neagh = neagh.to_crs(epsg=32629)
 
 # creating a new GeoAxes pyplot figure
 
@@ -87,12 +95,15 @@ myCRS = ccrs.UTM(29) # telling plot to expect data in WGS84 UTM29.
 # create an object of class Axes using UTM projection to tell pyplot where to plot data.
 ax = plt.axes(projection=ccrs.UTM(29))
 
-# use Cartopy ShapelyFeature class to draw NI's outline from the shapefile polygon geometry and add it to the map.
-outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='w')
+# use Cartopy ShapelyFeature class to draw shapefile boundaries from their polygon geometries.
+lgd_features = ShapelyFeature(lgd['geometry'], myCRS, edgecolor='dimgrey', facecolor='w', linewidth=0.75)
+outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='w', linewidth=1)
+neagh_feature = ShapelyFeature(neagh['geometry'], myCRS, edgecolor='dimgrey', facecolor='c', linewidth=0.75)
 
 xmin, ymin, xmax, ymax = outline.total_bounds
-
-ax.add_feature(outline_feature)
-
-ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
+ax.add_feature(outline_feature) # add NI outline feature to map
+ax.add_feature(lgd_features) # add Local Government District boundaries to map
+ax.add_feature(neagh_feature) #add Lough Neagh water body to map
+ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)  # use shapefile feature boundary to zoom map to area of interest
+# coordinates get re-ordered due to  different order of coords in total_bounds and set_extent.
 
