@@ -11,10 +11,10 @@ import matplotlib.lines as mlines
 
 plt.ion() # turn on interactive mode
 
-# Functions are defined first as each line of the script is run in sequence & we don't want interpreter to throw errors
-# when evaluating commands that haven't yet been written.
+# Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
+# that haven't yet been written.
 
-# Prepare for map legend by generating matplotlib handles to create legend of features to go in map output
+# Prepare for map legend by generating matplotlib handles to create legend of features to go in final map output
 
 def generate_handles(labels, colors, edge='k', alpha=1):
     lc = len(colors) # get length of colours list
@@ -51,7 +51,7 @@ def scale_bar(ax, location=(0.15, 0.05)): # ax is axes to draw scalebar on
     plt.text(sbx - 12500, sby - 4500, '10 km', transform=tmc, fontsize=8)
     plt.text(sbx - 24500, sby - 4500, '0 km', transform=tmc, fontsize=8)
 
-# Create new shapefile of Planning Appeals Commission data from csv text file
+# Create new shapefile of PAC enforcement appeal data from csv text file
 
 sdf = pd.read_csv('DataFiles/PlanningEnforcement_AppealDecisions.csv')
 sdf['geometry'] = list(zip(sdf['X'], sdf['Y']))
@@ -61,42 +61,38 @@ print(sdf.head())
 
 appeals = gpd.GeoDataFrame(sdf) # converting AppealDecisions.csv spatial data frame into a GeoDataFrame.
 appeals.set_crs("EPSG:4326", inplace=True) # csv XYs were in Irish Grid, these need to be converted to unprojected
-# lat-long coordinates using global internet standard WGS84 datum.
+# lat-long coordinates using global mapping standard WGS84 datum.
 print(appeals.head())
 appeals.to_file('DataFiles/appeal_points.shp')
 
-# Load open source Northern Ireland (NI) data from shapefiles
+# Load open source Northern Ireland (NI) shapefile data
 
 outline = gpd.read_file('DataFiles/NI_outline.shp')
 lgds = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
 
-# re-project all shapefile geometries to correct crs for display in mapping output (in this case UTM29)
+# transform all shapefile geometries to appropriate projected crs for display in mapping output plot.
+# WGS84 UTM (Zone 29) is good for large-scale mapping especially when a small region such as NI fits within one
+# of the 60 zones in a UTM projection.
 
 appeals = appeals.to_crs(epsg=32629)
 outline = outline.to_crs(epsg=32629)
 lgds = lgds.to_crs(epsg=32629)
 
-# myCRS = ccrs.UTM(29)
+# creating a new GeoAxes pyplot figure
 
-# create a new GeoAxis pyplot figure
-# myFig = plt.figure(figsize=(10, 10)) #this is just a normal matplotlib Axes object with no projection info.
-# this line should prob be deleted.
+myFig = plt.figure(figsize=(10, 10))
 
+myCRS = ccrs.UTM(29) # telling plot to expect data in WGS84 UTM29.
 
-# n.b. plot is expecting one CRS (WGS84 UTM Zone 29N) but data is currently in WGS84 lat-long.
-# UTM is bad for small-scale world maps, good for mapping narrow regions e.g. NI.
-#For projected layer crs, add UTM coordinate system at 29. WGS 84 / UTM zone 29N EPSG code is 32629
+# create an object of class Axes using UTM projection to tell pyplot where to plot data.
+ax = plt.axes(projection=ccrs.UTM(29))
 
-# create a new GeoAxes pyplot figure.  subplot kwarg is crucial; tells matplotlib how to transform gridlines and put
-# them in right place.  NI shapefile data is currently in WGS 84 lat-long.  Need to transform NI data into same CRS as
-# plot.
-# fig, ax = plt.subplots(1,1, figsize=(10,10), subplot_kw=dict(projection=myCRS)) #plt.subplots allows adding of
-# multiple Axes objects.  Keyword argument tells matplotlib how to transform gridlines and put them in right place.
+# use Cartopy ShapelyFeature class to draw NI's outline from the shapefile polygon geometry and add it to the map.
+outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='w')
 
-# outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='w')
-# xmin, ymin, xmax, ymax = outline.total_bounds
-# ax.add_feature(outline_feature)
+xmin, ymin, xmax, ymax = outline.total_bounds
 
-# ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
+ax.add_feature(outline_feature)
 
-# myFig.show()
+ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
+
