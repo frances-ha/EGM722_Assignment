@@ -3,6 +3,7 @@
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
+from matplotlib import font_manager, rcParams
 from pyproj import Proj, transform
 from shapely.geometry import Point
 from cartopy.feature import ShapelyFeature
@@ -11,7 +12,6 @@ import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 
 plt.ion()  # turn on interactive mode
-
 
 # Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
 # that haven't yet been written.
@@ -28,7 +28,7 @@ def generate_handles(labels, colors, edge='k', alpha=1):
 
 # Create scale bar function definition to be displayed in bottom left corner of map output
 
-def scale_bar(ax, location=(0.15, 0.05)):  # ax is axes to draw scalebar on
+def scale_bar(ax, location=(0.15, 0.1)):  # ax is axes to draw scalebar on
     llx0, llx1, lly0, lly1 = ax.get_extent(ccrs.PlateCarree())  # get limits of axis in lat-long.
     # ccrs (Cartopy Coordinate Reference System) is Cartopy's crs module (see import list).
     # ccrs.PlateCarree class makes PlateCarree projection available from Cartopy projection list.
@@ -92,7 +92,6 @@ neagh = water.head(1)
 neagh.to_file('DataFiles/lough_neagh.shp')
 neagh = gpd.read_file('DataFiles/lough_neagh.shp')
 
-
 # transform all shapefile geometries to appropriate projected crs for display in mapping output plot.
 # WGS84 UTM (Zone 29) is good for large-scale mapping especially when a small region such as NI fits within one
 # of the 60 zones in a UTM projection.
@@ -112,19 +111,60 @@ myCRS = ccrs.UTM(29)  # telling plot to expect data in WGS84 UTM29.
 ax = plt.axes(projection=ccrs.UTM(29))
 
 # use Cartopy ShapelyFeature class to draw polygons from shapefile geometries.
-lgd_features = ShapelyFeature(lgd['geometry'], myCRS, edgecolor='dimgrey', facecolor='w', linewidth=0.75)
-outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='w', linewidth=1)
-neagh_feature = ShapelyFeature(neagh['geometry'], myCRS, edgecolor='dimgrey', facecolor='c', linewidth=0.75)
+lgd_features = ShapelyFeature(lgd['geometry'], myCRS, edgecolor='k', facecolor='w', linewidth=0.75)
+outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='none', linewidth=1)
+neagh_feature = ShapelyFeature(neagh['geometry'], myCRS, edgecolor='k', facecolor='c', linewidth=0.75)
 
 # use ax.plot() to draw point data for planning enforcement appeal decisions
 appeal_handle = ax.plot(appeals.geometry.x, appeals.geometry.y, 's', color='red', ms=4, transform=myCRS)
-
-xmin, ymin, xmax, ymax = outline.total_bounds
 
 ax.add_feature(outline_feature)  # add NI outline feature to map
 ax.add_feature(lgd_features)  # add Local Government District boundaries to map
 ax.add_feature(neagh_feature)  # add Lough Neagh water body to map
 
+# Create new column for lgd geopandas dataframe
 
-ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)  # use shapefile feature boundary to zoom map to area of interest,
+lgd['coords'] = lgd['geometry'].apply(lambda x: x.representative_point().coords[:])
+lgd['coords'] = [coords[0] for coords in lgd['coords']]
+
+ax.plot()
+for idx, row in lgd.iterrows():
+    plt.annotate(text=row['LGDNAME'], fontfamily='Arial Narrow', fontsize='x-small', xy=row['coords'],
+                 horizontalalignment='center')
+
+xmin, ymin, xmax, ymax = outline.total_bounds
+
+# ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)  # use shapefile feature boundary to zoom map to area of interest,
 # with re-ordered coordinates due to  differing orders in total_bounds and set_extent.
+
+# add legend
+
+num_appeals = len(appeals.PAC_Decisi.unique())
+print('Number of unique features: {}'.format(num_appeals))
+
+appeal_colours = ['lime', 'red', 'grey', 'orangered', 'tomato']
+
+appeal_outcomes = list(appeals.PAC_Decisi.unique())
+appeal_outcomes.sort()
+
+appeal_handles = generate_handles(appeals.PAC_Decisi.unique(), appeal_colours)
+
+nice_appeals = []
+for name in appeal_outcomes:
+    nice_appeals.append(name.title())
+
+handles = appeal_handles
+labels = nice_appeals
+
+leg = ax.legend(handles, labels, title='Enforcement Appeal Decisions', title_fontsize=10, fontsize=8, loc='upper left',
+                frameon=True, framealpha=1)
+
+gridlines = ax.gridlines(draw_labels=True, linestyle='--',
+                         xlocs=[-8, -7, -6],
+                         ylocs=[54.5, 55])
+gridlines.right_labels = False # turn off the left-side labels
+gridlines.top_labels = False  # turn off the bottom labels
+ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
+
+scale_bar(ax)
+
