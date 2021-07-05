@@ -2,6 +2,7 @@
 
 import pandas as pd
 import geopandas as gpd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager, rcParams
 from pyproj import Proj, transform
@@ -12,7 +13,6 @@ import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 
 plt.ion()  # turn on interactive mode
-
 
 # Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
 # that haven't yet been written.
@@ -74,7 +74,7 @@ df['geometry'] = df['geometry'].apply(Point)
 # del df['X'], df['Y']
 print(df.head())
 
-appeals = gpd.GeoDataFrame(df)  # converting AppealDecisions.csv spatial data frame into a GeoDataFrame.
+appeals = gpd.GeoDataFrame(df)  # converting AppealDecisions.csv pandas data frame into a GeoDataFrame.
 appeals.set_crs("EPSG:4326", inplace=True)  # csv XYs are in Irish Grid, these need to be reprojected to WGS84 lat-long
 print(appeals.head())
 appeals.to_file('DataFiles/appeal_points.shp')
@@ -86,7 +86,7 @@ lgd = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
 water = gpd.read_file('DataFiles/NI_Water_Bodies.shp')
 appeals = gpd.read_file('DataFiles/appeal_points.shp')
 
-# Export Lough Neagh polygon from NI_Water_Bodies.shp to new shapefile to display in a simplified map display
+# Export only Lough Neagh polygon from NI_Water_Bodies.shp to a new shapefile for display in a simplified map
 
 neagh = water.head(1)
 neagh.to_file('DataFiles/lough_neagh.shp')
@@ -94,7 +94,7 @@ neagh = gpd.read_file('DataFiles/lough_neagh.shp')
 
 # transform all shapefile geometries to appropriate projected crs for display in mapping output plot.
 # WGS84 UTM (Zone 29) is good for large-scale mapping especially when a small region such as NI fits within one
-# of the 60 zones in a UTM projection.
+# of the 60 zones in the UTM projection.
 
 appeals = appeals.to_crs(epsg=32629)
 outline = outline.to_crs(epsg=32629)
@@ -115,7 +115,7 @@ lgd_features = ShapelyFeature(lgd['geometry'], myCRS, edgecolor='k', facecolor='
 outline_feature = ShapelyFeature(outline['geometry'], myCRS, edgecolor='k', facecolor='none', linewidth=1)
 neagh_feature = ShapelyFeature(neagh['geometry'], myCRS, edgecolor='k', facecolor='c', linewidth=0.75)
 
-# use ax.plot() to draw point data for planning enforcement appeal decisions
+# use ax.plot() to draw point data for planning enforcement appeal decisions based on PAC Decision column
 
 dismissed_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Dismissed'].geometry.x,
                            appeals[appeals['PAC_Decisi'] == 'Dismissed'].geometry.y, 's', color='red', ms=4,
@@ -141,10 +141,46 @@ ax.add_feature(outline_feature)  # add NI outline feature to map
 ax.add_feature(lgd_features)  # add Local Government District boundaries to map
 ax.add_feature(neagh_feature)  # add Lough Neagh water body to map
 
-# Create new column for lgd geopandas dataframe
+# Create new column for lgd geopandas dataframe to prepare for lgd labels
 
 lgd['coords'] = lgd['geometry'].apply(lambda x: x.representative_point().coords[:])
 lgd['coords'] = [coords[0] for coords in lgd['coords']]
+
+#GIS ANALYSIS
+
+#apply spatial join to appeal decisions and lgd boundary shapefiles
+
+join = gpd.sjoin(appeals, lgd, how='inner', lsuffix='left', rsuffix='right')
+
+# find out the total number of enforcement appeals in NI
+
+total_appeals = join['PAC_Decisi'].count()
+print('{} total enforcement appeals'.format(total_appeals))
+
+# find out how many unique classes of appeal decision there are
+
+num_appeals = len(join.PAC_Decisi.unique())
+print('{} unique classes of appeal outcome'.format(num_appeals))
+
+# list the unique appeal outcome classes in alphabetical order
+
+appeal_outcomes = list(join.PAC_Decisi.unique())
+appeal_outcomes.sort()
+print(appeal_outcomes)
+
+# find out total number of each appeal class
+
+join['PAC_Decisi'].value_counts()
+
+# which lgd has taken the greatest and least number of enforcement notices through to appeal?
+
+join['LGDNAME'].value_counts()
+
+# for each lgd, what is the percentage of allowed vs dismissed/varied/withdrawn enforcement appeals?
+
+
+# could i plot pie charts of these percentages on the map?
+
 
 ax.plot()
 for idx, row in lgd.iterrows():
@@ -153,21 +189,11 @@ for idx, row in lgd.iterrows():
 
 xmin, ymin, xmax, ymax = outline.total_bounds
 
-# ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)  # use shapefile feature boundary to zoom map to area of interest,
-# with re-ordered coordinates due to  differing orders in total_bounds and set_extent.
-
 # add legend
-
-num_appeals = len(appeals.PAC_Decisi.unique())
-print('Number of unique features: {}'.format(num_appeals))
 
 appeal_colours = ['lime', 'red', 'grey', 'orangered', 'tomato']
 
-# get a list of unique appeal outcomes
-appeal_outcomes = list(appeals.PAC_Decisi.unique())
-appeal_outcomes.sort()
-
-appeal_handles = generate_handles(appeals.PAC_Decisi.unique(), appeal_colours)
+appeal_handles = generate_handles(join.PAC_Decisi.unique(), appeal_colours)
 
 nice_appeals = []
 for name in appeal_outcomes:
