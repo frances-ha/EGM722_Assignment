@@ -17,16 +17,6 @@ plt.ion()  # turn on interactive mode
 # Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
 # that haven't yet been written.
 
-# Prepare for map legend by generating matplotlib handles to create legend of features to go in final map output
-
-def generate_handles(labels, colors, edge='k', alpha=1):
-    lc = len(colors)  # get length of colours list
-    handles = []
-    for i in range(len(labels)):
-        handles.append(mpatches.Rectangle((0, 0), 1, 1, facecolor=colors[i % lc], edgecolor=edge, alpha=alpha))
-    return handles
-
-
 # Create scale bar function definition to be displayed in bottom left corner of map output
 
 def scale_bar(ax, location=(0.15, 0.1)):  # ax is axes to draw scalebar on
@@ -122,20 +112,21 @@ dismissed_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Dismissed'].geometr
                            transform=myCRS)
 
 withdrawn_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Withdrawn'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'Withdrawn'].geometry.y, 's', color='tomato', ms=4,
+                           appeals[appeals['PAC_Decisi'] == 'Withdrawn'].geometry.y, 's', color='firebrick', ms=4,
                            transform=myCRS)
 
 varied_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.y, 's', color='orangered', ms=4,
+                           appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.y, 's', color='indianred', ms=4,
+                           transform=myCRS)
+
+notvalid_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.x,
+                           appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.y, 's', color='rosybrown', ms=4,
                            transform=myCRS)
 
 allowed_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.x,
                            appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.y, 's', color='limegreen', ms=4,
                            transform=myCRS)
 
-notvalid_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.y, 's', color='grey', ms=4,
-                           transform=myCRS)
 
 ax.add_feature(outline_feature)  # add NI outline feature to map
 ax.add_feature(lgd_features)  # add Local Government District boundaries to map
@@ -162,17 +153,18 @@ print('{} total enforcement appeals'.format(total_appeals))
 num_appeals = len(join.PAC_Decisi.unique())
 print('{} unique classes of appeal outcome'.format(num_appeals))
 
-# list the unique appeal outcome classes in alphabetical order
+# list unique appeal outcome classes by creating a list of unique values in the PAC.Decisi field of the join gpd
 
-appeal_outcomes = list(join.PAC_Decisi.unique())
-appeal_outcomes.sort()
-print(appeal_outcomes)
+appeals_list = list(join.PAC_Decisi.unique())
+order = [0, 3, 2, 4, 1]
+appeals_list =[appeals_list[i] for i in order] # custom sort appeal outcomes using list comprehension to depict
+# a colour gradient of "dismissed" to "allowed" in the map legend
 
-# find out total number of each appeal class
+# What are the results of planning enforcement appeals in Northern Ireland?
 
 join['PAC_Decisi'].value_counts()
 
-# which lgd has taken the greatest and least number of enforcement notices through to appeal?
+# which Planning Authority has taken the greatest and least number of enforcement notices through to appeal?
 
 join['LGDNAME'].value_counts()
 
@@ -191,16 +183,10 @@ xmin, ymin, xmax, ymax = outline.total_bounds
 
 # add legend
 
-appeal_colours = ['lime', 'red', 'grey', 'orangered', 'tomato']
-
-appeal_handles = generate_handles(join.PAC_Decisi.unique(), appeal_colours)
-
-nice_appeals = []
-for name in appeal_outcomes:
-    nice_appeals.append(name.title())
+appeal_handles = dismissed_handle + withdrawn_handle + varied_handle + notvalid_handle + allowed_handle
 
 handles = appeal_handles
-labels = nice_appeals
+labels = appeals_list
 
 leg = ax.legend(handles, labels, title='Enforcement Appeal Decisions', title_fontsize=10, fontsize=8, loc='upper left',
                 frameon=True, framealpha=1)
