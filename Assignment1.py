@@ -2,20 +2,25 @@
 
 import pandas as pd
 import geopandas as gpd
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import font_manager, rcParams
 from pyproj import Proj, transform
 from shapely.geometry import Point
 from cartopy.feature import ShapelyFeature
 import cartopy.crs as ccrs
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 
 plt.ion()  # turn on interactive mode
 
 # Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
 # that haven't yet been written.
+
+# Establish the total numbers of different appeal outcomes across Northern Ireland
+def all_appeals():
+    return join['PAC_Decisi'].value_counts()
+
+# Establish the most and least prolific local government district for pursuing contested enforcement cases
+def lgd_appeals():
+    return join['LGDNAME'].value_counts()
 
 # Create scale bar function definition to be displayed in bottom left corner of map output
 
@@ -162,14 +167,15 @@ appeals_list =[appeals_list[i] for i in order] # custom sort appeal outcomes usi
 
 # What are the results of planning enforcement appeals in Northern Ireland?
 
-join['PAC_Decisi'].value_counts()
+print(all_appeals())
 
 # which Planning Authority has taken the greatest and least number of enforcement notices through to appeal?
 
-join['LGDNAME'].value_counts()
+print(lgd_appeals())
 
 # for each lgd, what is the percentage of allowed vs dismissed/varied/withdrawn enforcement appeals?
 
+# join['LGDNAME'].sort() # start with alphabetical list of 11 local government districts
 
 # could i plot pie charts of these percentages on the map?
 
