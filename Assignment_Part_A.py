@@ -27,15 +27,6 @@ def get_unique_appeals(decisions):
     return unique
 
 
-# Establish total numbers of each appeal outcome across Northern Ireland
-def appeal_totals():
-    return join['PAC_Decisi'].value_counts()
-
-
-# Establish most and least prolific local government district for pursuing contested enforcement cases
-def lgd_appeals():
-    return join['LGDNAME'].value_counts()
-
 # Create scale bar function definition to be displayed in bottom left corner of map output
 
 def scale_bar(ax, location=(0.15, 0.1)):  # ax is axes to draw scalebar on
@@ -155,58 +146,13 @@ ax.add_feature(neagh_feature)  # add Lough Neagh water body to map
 lgd['coords'] = lgd['geometry'].apply(lambda x: x.representative_point().coords[:])
 lgd['coords'] = [coords[0] for coords in lgd['coords']]
 
-# GIS ANALYSIS
 
-# apply spatial join to appeal decisions and lgd boundary shapefiles
+# List unique appeal outcomes
 
-join = gpd.sjoin(appeals, lgd, how='inner', lsuffix='left', rsuffix='right')
-
-# find out the total number of enforcement appeals in NI
-
-total_appeals = join['PAC_Decisi'].count()
-print('{} total enforcement appeals'.format(total_appeals))
-
-# get total number of unique decision outcomes
-
-num_appeals = len(join.PAC_Decisi.unique())
-print('{} unique classes of appeal outcome'.format(num_appeals))
-
-# list unique appeal outcomes
-
-outcomes = get_unique_appeals(join.PAC_Decisi)
+outcomes = get_unique_appeals(appeals.PAC_Decisi)
 order = [0, 3, 2, 4, 1]
 appeals_list = [outcomes[i] for i in order]
 print(appeals_list)
-
-# What are the overall results of planning enforcement appeals in Northern Ireland?
-
-print(appeal_totals())
-
-# generate a list in descending order of planning authorities and corresponding numbers of enforcement appeal cases
-
-print(lgd_appeals())
-
-# for each lgd, what is the percentage of allowed vs dismissed/varied/withdrawn enforcement appeals?
-
-# firstly, create a new gdf with reduced information
-
-cols_of_interest = ['Appeal_Ref', 'LGDNAME', 'PAC_Decisi']
-gis_analysis = join[cols_of_interest]
-print(gis_analysis.head())
-
-gis_analysis = gis_analysis.assign(LGD_Success_Fail = gis_analysis['PAC_Decisi'])
-gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Dismissed', 'LGD_Success_Fail'] = 'Success'
-gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Withdrawn', 'LGD_Success_Fail'] = 'Success'
-gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Varied', 'LGD_Success_Fail'] = 'Success'
-gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Notvalid', 'LGD_Success_Fail'] = 'Success'
-gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Allowed', 'LGD_Success_Fail'] = 'Fail'
-
-gis_analysis = gis_analysis.drop(columns="PAC_Decisi")
-
-# use most prolific LGD (Newry, Mourne and Down aka NMD) as example
-
-
-# could i plot pie charts of these percentages on the map?
 
 
 ax.plot()
@@ -216,7 +162,7 @@ for idx, row in lgd.iterrows():
 
 xmin, ymin, xmax, ymax = outline.total_bounds
 
-# add legend
+# Add legend
 
 appeal_handles = dismissed_handle + withdrawn_handle + varied_handle + notvalid_handle + allowed_handle
 
