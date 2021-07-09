@@ -4,6 +4,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib import font_manager, rcParams
+import numpy as np
 from pyproj import Proj, transform
 from shapely.geometry import Point
 from cartopy.feature import ShapelyFeature
@@ -11,14 +12,27 @@ import cartopy.crs as ccrs
 
 plt.ion()  # turn on interactive mode
 
+
 # Define functions at top of script to prevent interpreter from throwing errors when attempting to evaluate commands
 # that haven't yet been written.
 
-# Establish the total numbers of different appeal outcomes across Northern Ireland
-def all_appeals():
+# Establish range of possible enforcement appeal outcomes
+
+def get_unique_appeals(decisions):
+    unique = []
+
+    for outcome in decisions:
+        if outcome not in unique:
+            unique.append(outcome)
+    return unique
+
+
+# Establish total numbers of each appeal outcome across Northern Ireland
+def appeal_totals():
     return join['PAC_Decisi'].value_counts()
 
-# Establish the most and least prolific local government district for pursuing contested enforcement cases
+
+# Establish most and least prolific local government district for pursuing contested enforcement cases
 def lgd_appeals():
     return join['LGDNAME'].value_counts()
 
@@ -121,17 +135,16 @@ withdrawn_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Withdrawn'].geometr
                            transform=myCRS)
 
 varied_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.y, 's', color='indianred', ms=4,
-                           transform=myCRS)
+                        appeals[appeals['PAC_Decisi'] == 'Varied'].geometry.y, 's', color='indianred', ms=4,
+                        transform=myCRS)
 
 notvalid_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.y, 's', color='rosybrown', ms=4,
-                           transform=myCRS)
+                          appeals[appeals['PAC_Decisi'] == 'NotValid'].geometry.y, 's', color='rosybrown', ms=4,
+                          transform=myCRS)
 
 allowed_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.x,
-                           appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.y, 's', color='limegreen', ms=4,
-                           transform=myCRS)
-
+                         appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.y, 's', color='limegreen', ms=4,
+                         transform=myCRS)
 
 ax.add_feature(outline_feature)  # add NI outline feature to map
 ax.add_feature(lgd_features)  # add Local Government District boundaries to map
@@ -142,9 +155,9 @@ ax.add_feature(neagh_feature)  # add Lough Neagh water body to map
 lgd['coords'] = lgd['geometry'].apply(lambda x: x.representative_point().coords[:])
 lgd['coords'] = [coords[0] for coords in lgd['coords']]
 
-#GIS ANALYSIS
+# GIS ANALYSIS
 
-#apply spatial join to appeal decisions and lgd boundary shapefiles
+# apply spatial join to appeal decisions and lgd boundary shapefiles
 
 join = gpd.sjoin(appeals, lgd, how='inner', lsuffix='left', rsuffix='right')
 
@@ -153,29 +166,45 @@ join = gpd.sjoin(appeals, lgd, how='inner', lsuffix='left', rsuffix='right')
 total_appeals = join['PAC_Decisi'].count()
 print('{} total enforcement appeals'.format(total_appeals))
 
-# find out how many unique classes of appeal decision there are
+# get total number of unique decision outcomes
 
 num_appeals = len(join.PAC_Decisi.unique())
 print('{} unique classes of appeal outcome'.format(num_appeals))
 
-# list unique appeal outcome classes by creating a list of unique values in the PAC.Decisi field of the join gpd
+# list unique appeal outcomes
 
-appeals_list = list(join.PAC_Decisi.unique())
+outcomes = get_unique_appeals(join.PAC_Decisi)
 order = [0, 3, 2, 4, 1]
-appeals_list =[appeals_list[i] for i in order] # custom sort appeal outcomes using list comprehension to depict
-# a colour gradient of "dismissed" to "allowed" in the map legend
+appeals_list = [outcomes[i] for i in order]
+print(appeals_list)
 
-# What are the results of planning enforcement appeals in Northern Ireland?
+# What are the overall results of planning enforcement appeals in Northern Ireland?
 
-print(all_appeals())
+print(appeal_totals())
 
-# which Planning Authority has taken the greatest and least number of enforcement notices through to appeal?
+# generate a list in descending order of planning authorities and corresponding numbers of enforcement appeal cases
 
 print(lgd_appeals())
 
 # for each lgd, what is the percentage of allowed vs dismissed/varied/withdrawn enforcement appeals?
 
-# join['LGDNAME'].sort() # start with alphabetical list of 11 local government districts
+# firstly, create a new gdf with reduced information
+
+cols_of_interest = ['Appeal_Ref', 'LGDNAME', 'PAC_Decisi']
+gis_analysis = join[cols_of_interest]
+print(gis_analysis.head())
+
+gis_analysis = gis_analysis.assign(LGD_Success_Fail = gis_analysis['PAC_Decisi'])
+gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Dismissed', 'LGD_Success_Fail'] = 'Success'
+gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Withdrawn', 'LGD_Success_Fail'] = 'Success'
+gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Varied', 'LGD_Success_Fail'] = 'Success'
+gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Notvalid', 'LGD_Success_Fail'] = 'Success'
+gis_analysis.loc[gis_analysis['PAC_Decisi'] == 'Allowed', 'LGD_Success_Fail'] = 'Fail'
+
+gis_analysis = gis_analysis.drop(columns="PAC_Decisi")
+
+# use most prolific LGD (Newry, Mourne and Down aka NMD) as example
+
 
 # could i plot pie charts of these percentages on the map?
 
