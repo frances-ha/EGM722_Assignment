@@ -1,16 +1,6 @@
 # Add imports
 
-import pandas as pd
 import geopandas as gpd
-import numpy as np
-import matplotlib.pyplot as plt
-from pyproj import Proj, transform
-from shapely.geometry import Point
-from cartopy.feature import ShapelyFeature
-import cartopy.crs as ccrs
-
-
-# plt.ion()  # Turn on interactive mode
 
 # Write functions
 
