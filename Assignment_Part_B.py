@@ -1,67 +1,86 @@
-# Add imports
-
 import geopandas as gpd
 
-# Write functions
 
-# Establish range of possible enforcement appeal outcomes
+# ---------------------------------------------------------------------------------------------------------------
+# Define functions
 
 def get_unique_appeals(decisions):
-    unique = []
+    """This function returns a list of all possible enforcement appeal outcomes from the input dataset by looping
+        through a selected GeoDataFrame column.
 
-    for outcome in decisions:
-        if outcome not in unique:
-            unique.append(outcome)
+        Parameters: decisions(gdf): GeoDataFrame column label.
+
+        Returns: list of unique values. """
+
+    unique = []  # Initialise empty list
+
+    for outcome in decisions:  # Look at all elements of selected gdf series
+        if outcome not in unique:  # Find any values that haven't been added to the unique list
+            unique.append(outcome)  # Add these values to the list
     return unique
 
 
 # Establish total numbers of each appeal outcome across Northern Ireland
 
 def appeal_totals():
+    """This function is based on the key gdf column used in this analysis, 'PAC_Decisi', and uses the pandas value_count
+    function to return a GeoSeries containing counts of unique values from this column in
+    descending order.  This is used as a baseline to establish total numbers of enforcement appeal outcome
+    across NI.  For consistency purposes the join gdf is used but the results do not relate to the spatially joined
+    Local Government District boundaries."""
+
     return join['PAC_Decisi'].value_counts()
 
 
 # Establish most and least prolific LGD for pursuing contested enforcement cases
 
 def lgd_appeals():
+    """This function uses the value count function to extend the analysis by returning a GeoSeries containing counts of
+    unique values from the 'LGDNAME' column attached to the spatially joined gdf.  This produces a list of enforcement
+    appeals handled per LGD in descending order, with the most prolific local council at the top of the list."""
+
     return join['LGDNAME'].value_counts()
 
 
 # Create new column to process existing data and return new variable
 
 def get_lgd_outcome():
-    lgd_outcome = []
+    """This function uses the spatially joined dataset to create a new column which processes existing appeal outcome
+    data and returns a new variable based on whether the appeal outcome is considered a successful or unsuccessful
+    result for the local council. """
+
+    lgd_outcome = []  # Initialise an empty list to be appended to the join gdf
 
     for value in join['PAC_Decisi']:
-        if value == "Allowed":  # if appeal outcome ('PAC_Decisi') is allowed, this is a "fail" for the LGD.
+        if value == "Allowed":  # If appeal outcome ('PAC_Decisi') is allowed, this is a "fail" for the LGD.
             lgd_outcome.append("Fail")
         else:
-            lgd_outcome.append("Success")  # if appeal outcome is dismissed / withdrawn / varied / invalid (i.e. all
+            lgd_outcome.append("Success")  # If appeal outcome is dismissed / withdrawn / varied / invalid (i.e. all
         # other values), this is a "success" for the LGD.
 
-    join["LGD_Success_Fail"] = lgd_outcome
+    join["LGD_Success_Fail"] = lgd_outcome  # Add new column to gdf
 
-# -----------------------------------------------------------
-# PREPARE TEST DATA FOR GIS ANALYSIS
+
+# -------------------------------------------------------------------------------------------------------------------
+# Prepare test data for GIS analysis
 
 # Load enforcement appeal data & LGD boundary data then check column names & CRS info
 
 appeal_outcomes = gpd.read_file('DataFiles/appeal_points.shp')
-
 print(appeal_outcomes.columns.values)
 print(appeal_outcomes.crs)  # answer - epsg:4326
 
 lgd = gpd.read_file('DataFiles/NI_LocalGovernmentDistricts.shp')
 print(lgd.columns.values)
 print(lgd.crs)  # answer - epsg:29902
-lgd_wgs84 = lgd.to_crs(epsg=4326)
+lgd_wgs84 = lgd.to_crs(epsg=4326)  # Transform Irish Grid geometries to WGS84 lat-long coordinate reference system.
 
 # Apply spatial join then inspect column names
 
 join = gpd.sjoin(appeal_outcomes, lgd_wgs84, how='inner', lsuffix='left', rsuffix='right')
 print(join.columns.values)
 
-# Amend gdf to only display columns of interest to GIS analysis, then check output column names
+# Amend gdf to only display columns of interest to the GIS analysis, then check output column names
 
 cols_of_interest = ['Appeal_Ref', 'LGDNAME', 'PAC_Decisi']
 join = join[cols_of_interest]
@@ -72,22 +91,22 @@ print(join.columns.values)
 
 print(get_lgd_outcome())
 
-join.reset_index(inplace=True) # reset dataframe index by setting a list of integers from 0 to length of data
-join.sort_values(by=['index'], ascending=True, inplace=True) # sort index values in ascending order
-print(join.head(10))  # quickly test if object has returned correct data
+join.reset_index(inplace=True)  # Reset gdf index by setting a list of integers from 0 to length of data
+join.sort_values(by=['index'], ascending=True, inplace=True)  # Sort index values in ascending order
+print(join.head(10))  # Test if object has returned correct data
 
 # -------------------------------------------------------------------------
-# GIS ANALYSIS
+# Spatial Analysis
 
 # How many enforcement appeals have been determined in Northern Ireland since 2013?
 
 total_appeals = join['PAC_Decisi'].count()
-print('{} total enforcement appeals'.format(total_appeals))  # answer - 129
+print('{} total enforcement appeals'.format(total_appeals))  # Answer - 129
 
 # How many unique values of appeal outcome are there, and what are these outcomes?
 
 num_appeals = len(join.PAC_Decisi.unique())
-print('{} unique classes of appeal outcome'.format(num_appeals))  # answer - 5
+print('{} unique classes of appeal outcome'.format(num_appeals))  # Answer - 5
 
 outcomes_list = get_unique_appeals(join.PAC_Decisi)
 print('List of appeal outcomes: {}'.format(outcomes_list))
@@ -104,27 +123,25 @@ print('Enforcement appeals handled per LGD in descending order: {}'.format(lgd_a
 # enforcement appeals?
 # Due to low test data numbers, use most prolific LGD (Newry, Mourne and Down aka NMD) as example
 
-# Firstly, get total number of lgd cases by subsetting LGDNAME series
+# Firstly, get total number of LGD cases by subsetting LGDNAME series
 NMD = join.loc[join['LGDNAME'] == 'Newry, Mourne and Down']
 print('total number of appeals is', len(NMD))
-NMD_int = len(NMD) # change len df result to integer
+NMD_int = len(NMD)  # Convert outcome to numeric data by changing gdf to integer value
 
 # Secondly, subset data to find the number of appeals that were successfully defended by the LGD
 NMD_success = NMD.loc[NMD['LGD_Success_Fail'] == 'Success']
 print('number of upheld appeal decisions is', len(NMD_success))
-NMD_success_int = len(NMD_success) # convert outcome to numeric data
+NMD_success_int = len(NMD_success)
 
-# Thirdly, subset the same data to find the number of appeals lost by the LGD
+# Thirdly, subset the same gdf to find the number of appeals lost by the LGD
 NMD_fail = NMD.loc[NMD['LGD_Success_Fail'] == 'Fail']
 print('number of appeals lost is', len(NMD_fail))
-NMD_fail_int = len(NMD_fail) # convert outcome to numeric data
+NMD_fail_int = len(NMD_fail)
 
-# Finally, calculate percentages
+# Finally, calculate percentages.
 
-success_rate = (NMD_success_int / NMD_int)*100
+success_rate = (NMD_success_int / NMD_int) * 100
 print(success_rate)
 
-failure_rate = (NMD_fail_int / NMD_int)*100
+failure_rate = (NMD_fail_int / NMD_int) * 100
 print(failure_rate)
-
-
