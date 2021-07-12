@@ -64,7 +64,7 @@ def scale_bar(ax, location=(0.15, 0.1)):
 
 # Create new shapefile of test data from csv file.
 
-df = pd.read_csv('DataFiles/PlanningEnforcement_AppealDecisions.csv')
+df = pd.read_csv('DataFiles/PlanningEnforcement_AppealDecisions1.csv')
 inProj, outProj = Proj("epsg:29902"), Proj("epsg:4326")
 df['Y1'], df['X1'] = transform(inProj, outProj, df['X'].tolist(), df['Y'].tolist())  # Transform TM65 Irish Grid coords
 # (EPSG:29902) into WGS84 (EPSG: 4326) lat-long coordinates and create columns in df containing new XY lists.
@@ -72,10 +72,9 @@ df['Y1'], df['X1'] = transform(inProj, outProj, df['X'].tolist(), df['Y'].tolist
 # df.reset_index(inplace=True)  # Reset the index of the original dataframe by generating a new index label with default
 # name "level_0" which is added to dataframe.
 print(df.columns)  # Show current order of dataframe columns.
-df = df.reindex(columns=['Appeal_Reference', 'Departmental_Reference', 'Development_Description', 'House_Number',
-                         'Street_Name', 'Postcode', 'Decision_Date', 'PAC_Decision_Outcome', 'X', 'Y', 'X1', 'Y1',
-                         'geometry'])  # Re-order dataframe so that new transformed X1 & Y1 lists read concurrently.
-# delete excessive columns? del df['X'], df['Y'] ?
+# Re-order dataframe so that new transformed X1 & Y1 lists read concurrently.
+df = df.reindex(columns=['Appeal_Reference', 'Postcode', 'PAC_Decision_Outcome', 'X', 'Y', 'X1', 'Y1', 'geometry'])
+# delete df['X'], df['Y'] ?
 
 df['geometry'] = list(zip(df['X1'], df['Y1']))
 df['geometry'] = df['geometry'].apply(Point)
