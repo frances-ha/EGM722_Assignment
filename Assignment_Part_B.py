@@ -22,10 +22,16 @@ def get_lgd_outcome():
 
 
 def total_appeals():
+    """This function counts the number of cells in the 'PAC_Decisi' column of the spatial join gdf to return an
+    integer number representing the total number of appeal decisions contained in the test dataset."""
     return join['PAC_Decisi'].count()
 
 
 def num_appeals():
+    """This function uses an alternate method (the "len()" function) to compute the number of unique values in the
+    'PAC_Decisi' column of the spatial join gdf, returning an integer value that represents the range of unique
+    appeal outcomes in the test dataset."""
+
     return len(join.PAC_Decisi.unique())
 
 
