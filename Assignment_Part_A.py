@@ -185,3 +185,5 @@ gridlines.top_labels = False  # turn off the bottom labels
 ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
 
 scale_bar(ax)
+
+myFig.savefig('DataFiles/map.jpg')
