@@ -179,5 +179,5 @@ ax.set_extent([xmin, xmax, ymin, ymax], crs=myCRS)
 
 scale_bar(ax)
 
-# save mapping output as jpeg file to specified folder
+# save mapping output as jpg file to specified folder for use in how-to guide
 myFig.savefig('DataFiles/map.jpg')
