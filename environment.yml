@@ -1,0 +1,10 @@
+name: egm722
+channels: 
+    - conda-forge
+    - https://github.com/frances-ha/egm722
+    - defaults
+dependencies:
+    - python=3.8.8
+    - geopandas=0.9.0
+    - cartopy=0.18.0
+prefix: C:\Users\Frances\anaconda3\envs\egm722
