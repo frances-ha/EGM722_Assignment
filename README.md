@@ -1,6 +1,6 @@
-# H1 EGM722_Assignment
+## EGM722_Assignment
 
-## H2 Coding Assignment for EGM722: Programming for GIS and Remote Sensing at Ulster University
+### Coding Assignment for EGM722: Programming for GIS and Remote Sensing at Ulster University
  
 **Setup and Installation**
 
@@ -16,7 +16,7 @@ The Part A and Part B scripts are provided as Python documents in the repository
 5. All other data was deemed unnecessary for this project and was removed from the CSV file using a GitHub development branch, including appellant names, addresses and other published information.
 
 6. The other required data files are shapefiles of the Northern Ireland outline, LGD boundaries and water bodies.  These are available to download from the Open Data NI website by accessing the following links:
-	o	https://www.opendatani.gov.uk/dataset/osni-open-data-largescale-boundaries-ni-outline  (Northern Ireland outline)
-	o	https://www.opendatani.gov.uk/dataset/osni-open-data-largescale-boundaries-local-government-districts-2012  (LGD boundaries)
-	o	https://www.opendatani.gov.uk/dataset/lakes-of-northern-ireland (water bodies).
+- https://www.opendatani.gov.uk/dataset/osni-open-data-largescale-boundaries-ni-outline  (Northern Ireland outline)
+- https://www.opendatani.gov.uk/dataset/osni-open-data-largescale-boundaries-local-government-districts-2012  (LGD boundaries)
+- https://www.opendatani.gov.uk/dataset/lakes-of-northern-ireland (water bodies).
 
