@@ -6,7 +6,7 @@ from shapely.geometry import Point
 from cartopy.feature import ShapelyFeature
 import cartopy.crs as ccrs
 
-# turn on MatPlotLib interactive mode
+# turn on Matplotlib interactive mode
 plt.ion()
 
 
@@ -21,11 +21,11 @@ def get_unique_appeals(decisions):
 
     Returns: list of unique values. """
 
-    unique = []  # initialise an empty list
+    unique = []  # initialise empty list
 
     for outcome in decisions:  # look at all elements of selected gdf column
-        if outcome not in unique:  # find any values that haven't been added to the unique list
-            unique.append(outcome)  # add these values to the list
+        if outcome not in unique:  # find any values that haven't been added to unique list
+            unique.append(outcome)  # add these values to list
     return unique
 
 
@@ -69,7 +69,7 @@ df = pd.read_csv('DataFiles/PlanningEnforcement_AppealDecisions1.csv')
 # containing new XY lists
 inProj, outProj = Proj("epsg:29902"), Proj("epsg:4326")
 df['Y1'], df['X1'] = transform(inProj, outProj, df['X'].tolist(), df['Y'].tolist())
-# re-order the dataframe so that new transformed X1 & Y1 lists read concurrently
+# re-order dataframe so that new transformed X1 & Y1 lists read concurrently
 df = df.reindex(columns=['Appeal_Reference', 'Postcode', 'PAC_Decision_Outcome', 'X', 'Y', 'X1', 'Y1', 'geometry'])
 
 df['geometry'] = list(zip(df['X1'], df['Y1']))
@@ -137,12 +137,11 @@ allowed_handle = ax.plot(appeals[appeals['PAC_Decisi'] == 'Allowed'].geometry.x,
                          transform=myCRS)
 
 ax.add_feature(outline_feature)  # add NI outline feature to map
-ax.add_feature(lgd_features)  # add Local Government District boundaries to map
+ax.add_feature(lgd_features)  # add LGD boundaries to map
 ax.add_feature(neagh_feature)  # add Lough Neagh water feature to map
 
-# set up labelling so that each local government district (LGD) polygon will have a label on the map, n.b. this section
-# of code is based on the following Stack Overflow page:
-# https://stackoverflow.com/questions/38899190/geopandas-label-polygons
+# set up labelling so that each LGD polygon will have a label on the map, n.b. this section of code is based on the
+# following Stack Overflow page: https://stackoverflow.com/questions/38899190/geopandas-label-polygons
 
 # firstly, create new 'coords' column using Shapely representative point method, this returns a column of points
 # guaranteed to be within the geometry of each polygon object
@@ -154,7 +153,7 @@ outcomes = get_unique_appeals(appeals.PAC_Decisi)
 order = [0, 2, 4, 3, 1]
 appeals_list = [outcomes[i] for i in order]
 
-# second part of representative point method adds annotations to map by iterating over the gdf LGD names column
+# second part of representative point method adds annotations to map by iterating over 'LGDNAME' column
 ax.plot()
 for idx, row in lgd.iterrows():
     plt.annotate(text=row['LGDNAME'], fontsize='x-small', xy=row['coords'], horizontalalignment='center')
