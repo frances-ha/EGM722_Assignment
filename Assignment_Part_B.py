@@ -9,7 +9,7 @@ def get_lgd_outcome():
     data & returns new variable based on whether the appeal outcome is considered a successful or unsuccessful
     result for the local council. """
 
-    lgd_outcome = []  # initialise an empty list to be appended to the join gdf
+    lgd_outcome = []  # initialise empty list to be appended to spatial join gdf
 
     for value in join['PAC_Decisi']:
         if value == "Allowed":  # if appeal outcome ('PAC_Decisi') is allowed, this is a "fail" for the LGD.
@@ -24,6 +24,7 @@ def get_lgd_outcome():
 def total_appeals():
     """This function counts the number of cells in the 'PAC_Decisi' column of the spatial join gdf to return an
     integer number representing the total number of appeal decisions contained in the test dataset."""
+
     return join['PAC_Decisi'].count()
 
 
@@ -54,10 +55,9 @@ def get_unique_appeals(decisions):
 
 def appeal_totals():
     """This function is based on the key gdf column used in this analysis, 'PAC_Decisi', and uses the pandas value_count
-    function to return a GeoSeries containing counts of unique values from this column in
-    descending order.  This is used as a baseline to establish total numbers of enforcement appeal outcome
-    across NI.  For consistency purposes the join gdf is used but the results do not relate to the spatially joined
-    Local Government District boundaries."""
+    function to return a GeoSeries containing counts of unique values from this column in descending order.  This is
+    used as a baseline to establish total numbers of enforcement appeal outcomes across NI.  For consistency purposes,
+    the join gdf is used but the results do not relate to the spatially joined Local Government District boundaries."""
 
     return join['PAC_Decisi'].value_counts()
 
@@ -84,7 +84,7 @@ print(lgd.columns.values)
 print(lgd.crs)
 lgd_wgs84 = lgd.to_crs(epsg=4326)  # transform TM65 to WGS84
 
-# apply spatial join then inspect column names
+# apply spatial join, then inspect column names
 join = gpd.sjoin(appeal_outcomes, lgd_wgs84, how='inner', lsuffix='left', rsuffix='right')
 print(join.columns.values)
 
@@ -117,13 +117,13 @@ print('Total numbers of each possible appeal outcome: {}'.format(appeal_totals()
 # generate a list in descending order of total appeal cases dealt with per LGD
 print('Enforcement appeals handled per LGD in descending order: {}'.format(lgd_appeals()))
 
-# For each LGD, what is % of allowed ("failure") vs dismissed/varied/withdrawn ("success") enforcement appeals?
+# for each LGD, what is % of allowed ("failure") vs dismissed/varied/withdrawn ("success") enforcement appeals?
 # n.b. due to low test data numbers, use most prolific LGD (Newry, Mourne and Down aka NMD) as example.
 
 # firstly get total number of LGD cases by subsetting LGDNAME series
 NMD = join.loc[join['LGDNAME'] == 'Newry, Mourne and Down']
 print('total number of appeals is', len(NMD))
-NMD_int = len(NMD)  # Convert outcome to numeric data by changing gdf to integer value
+NMD_int = len(NMD)  # convert outcome to numeric data by changing gdf to integer value
 
 # secondly subset the data to find number of appeals successfully defended by LGD
 NMD_success = NMD.loc[NMD['LGD_Success_Fail'] == 'Success']
@@ -136,7 +136,7 @@ print('number of appeals lost is', len(NMD_fail))
 NMD_fail_int = len(NMD_fail)
 
 # finally, use division operator to calculate percentages, clean up final outputs using format specification to reduce
-# decimal places, print outcomes to screen
+# decimal places, then print outcomes to screen
 success_rate = (NMD_success_int / NMD_int) * 100
 print('{:.2f} % success rate'.format(success_rate))
 
